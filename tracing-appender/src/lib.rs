@@ -30,10 +30,10 @@
 //!
 //! ```rust
 //! # fn docs() {
-//! let file_appender = tracing_appender::rolling::hourly("/some/directory", "prefix.log");
+//! let file_appender = tracing_appender::rolling::hourly("/some/directory", "prefix.", ".log");
 //! # }
 //! ```
-//! This creates an hourly rotating file appender that writes to `/some/directory/prefix.log.YYYY-MM-DD-HH`.
+//! This creates an hourly rotating file appender that writes to `/some/directory/prefix.YYYY-MM-DD-HH.log`.
 //! [`Rotation::DAILY`](rolling::Rotation::DAILY) and [`Rotation::NEVER`](rolling::Rotation::NEVER) are the other available options.
 //!
 //! The file appender implements [`std::io::Write`][write]. To be used with [`tracing_subscriber::FmtSubscriber`][fmt_subscriber],
@@ -100,7 +100,7 @@
 //!
 //! ```rust
 //! # fn docs() {
-//! let file_appender = tracing_appender::rolling::hourly("/some/directory", "prefix.log");
+//! let file_appender = tracing_appender::rolling::hourly("/some/directory", "prefix.", ".log");
 //! let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 //! tracing_subscriber::fmt()
 //!     .with_writer(non_blocking)

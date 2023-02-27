@@ -59,11 +59,11 @@ This crate can be used in a few ways to record spans/events:
 
 ```rust
 fn main(){
-    let file_appender = tracing_appender::rolling::hourly("/some/directory", "prefix.log");
+    let file_appender = tracing_appender::rolling::hourly("/some/directory", "prefix." ".log");
 }
 ```
 This creates an hourly rotating file appender that writes to 
-`/some/directory/prefix.log.YYYY-MM-DD-HH`. [`Rotation::DAILY`] and 
+`/some/directory/prefix.YYYY-MM-DD-HH.log`. [`Rotation::DAILY`] and 
 [`Rotation::NEVER`] are the other available options.
 
 The file appender implements [`std::io::Write`][write]. To be used with 
@@ -126,7 +126,7 @@ use `non_blocking`.
 
 ```rust
 fn main() {
-    let file_appender = tracing_appender::rolling::hourly("/some/directory", "prefix.log");
+    let file_appender = tracing_appender::rolling::hourly("/some/directory", "prefix.", ".log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
    tracing_subscriber::fmt()
        .with_writer(non_blocking)

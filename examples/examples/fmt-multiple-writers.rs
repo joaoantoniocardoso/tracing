@@ -10,7 +10,7 @@ use tracing_subscriber::{fmt, layer::SubscriberExt, EnvFilter};
 fn main() {
     let dir = tempfile::tempdir().expect("Failed to create tempdir");
 
-    let file_appender = tracing_appender::rolling::hourly(dir, "example.log");
+    let file_appender = tracing_appender::rolling::hourly(dir, "example.", ".log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
     let subscriber = tracing_subscriber::registry()

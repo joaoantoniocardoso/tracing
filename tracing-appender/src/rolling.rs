@@ -27,7 +27,7 @@
 //! ```rust
 //! # fn docs() {
 //! use tracing_appender::rolling::{RollingFileAppender, Rotation};
-//! let file_appender = RollingFileAppender::new(Rotation::HOURLY, "/some/directory", "prefix.log");
+//! let file_appender = RollingFileAppender::new(Rotation::HOURLY, "/some/directory", "prefix.", ".log");
 //! # }
 //! ```
 use crate::sync::{RwLock, RwLockReadGuard};
@@ -59,7 +59,7 @@ use time::{format_description, Duration, OffsetDateTime, Time};
 ///
 /// ```rust
 /// # fn docs() {
-/// let file_appender = tracing_appender::rolling::hourly("/some/directory", "prefix");
+/// let file_appender = tracing_appender::rolling::hourly("/some/directory", "prefix.", ".log");
 /// # }
 /// ```
 ///
@@ -70,7 +70,7 @@ use time::{format_description, Duration, OffsetDateTime, Time};
 /// use tracing_subscriber::fmt::writer::MakeWriterExt;
 ///
 /// // Log all events to a rolling log file.
-/// let logfile = tracing_appender::rolling::hourly("/logs", "myapp-logs");
+/// let logfile = tracing_appender::rolling::hourly("/logs", "myapp-logs.", ".log");
 
 /// // Log `INFO` and above to stdout.
 /// let stdout = std::io::stdout.with_max_level(tracing::Level::INFO);
@@ -104,6 +104,7 @@ pub struct RollingWriter<'a>(RwLockReadGuard<'a, File>);
 struct Inner {
     log_directory: String,
     log_filename_prefix: String,
+    log_filename_suffix: String,
     rotation: Rotation,
     next_date: AtomicUsize,
 }
@@ -135,16 +136,18 @@ impl RollingFileAppender {
     /// ```rust
     /// # fn docs() {
     /// use tracing_appender::rolling::{RollingFileAppender, Rotation};
-    /// let file_appender = RollingFileAppender::new(Rotation::HOURLY, "/some/directory", "prefix.log");
+    /// let file_appender = RollingFileAppender::new(Rotation::HOURLY, "/some/directory", "prefix.", ".log");
     /// # }
     /// ```
     pub fn new(
         rotation: Rotation,
         directory: impl AsRef<Path>,
         file_name_prefix: impl AsRef<Path>,
+        file_name_suffix: impl AsRef<Path>,
     ) -> RollingFileAppender {
         let now = OffsetDateTime::now_utc();
-        let (state, writer) = Inner::new(now, rotation, directory, file_name_prefix);
+        let (state, writer) =
+            Inner::new(now, rotation, directory, file_name_prefix, file_name_suffix);
         Self {
             state,
             writer,
@@ -223,7 +226,7 @@ impl fmt::Debug for RollingFileAppender {
 /// # #[clippy::allow(needless_doctest_main)]
 /// fn main () {
 /// # fn doc() {
-///     let appender = tracing_appender::rolling::minutely("/some/path", "rolling.log");
+///     let appender = tracing_appender::rolling::minutely("/some/path", "rolling.", ".log");
 ///     let (non_blocking_appender, _guard) = tracing_appender::non_blocking(appender);
 ///
 ///     let subscriber = tracing_subscriber::fmt().with_writer(non_blocking_appender);
@@ -235,12 +238,18 @@ impl fmt::Debug for RollingFileAppender {
 /// }
 /// ```
 ///
-/// This will result in a log file located at `/some/path/rolling.log.yyyy-MM-dd-HH-mm`.
+/// This will result in a log file located at `/some/path/rolling.yyyy-MM-dd-HH-mm.log`.
 pub fn minutely(
     directory: impl AsRef<Path>,
     file_name_prefix: impl AsRef<Path>,
+    file_name_suffix: impl AsRef<Path>,
 ) -> RollingFileAppender {
-    RollingFileAppender::new(Rotation::MINUTELY, directory, file_name_prefix)
+    RollingFileAppender::new(
+        Rotation::MINUTELY,
+        directory,
+        file_name_prefix,
+        file_name_suffix,
+    )
 }
 
 /// Creates an hourly, rolling file appender.
@@ -258,7 +267,7 @@ pub fn minutely(
 /// # #[clippy::allow(needless_doctest_main)]
 /// fn main () {
 /// # fn doc() {
-///     let appender = tracing_appender::rolling::hourly("/some/path", "rolling.log");
+///     let appender = tracing_appender::rolling::hourly("/some/path", "rolling.", ".log");
 ///     let (non_blocking_appender, _guard) = tracing_appender::non_blocking(appender);
 ///
 ///     let subscriber = tracing_subscriber::fmt().with_writer(non_blocking_appender);
@@ -270,12 +279,18 @@ pub fn minutely(
 /// }
 /// ```
 ///
-/// This will result in a log file located at `/some/path/rolling.log.yyyy-MM-dd-HH`.
+/// This will result in a log file located at `/some/path/rolling.yyyy-MM-dd-HH.log`.
 pub fn hourly(
     directory: impl AsRef<Path>,
     file_name_prefix: impl AsRef<Path>,
+    file_name_suffix: impl AsRef<Path>,
 ) -> RollingFileAppender {
-    RollingFileAppender::new(Rotation::HOURLY, directory, file_name_prefix)
+    RollingFileAppender::new(
+        Rotation::HOURLY,
+        directory,
+        file_name_prefix,
+        file_name_suffix,
+    )
 }
 
 /// Creates a file appender that rotates daily.
@@ -294,7 +309,7 @@ pub fn hourly(
 /// # #[clippy::allow(needless_doctest_main)]
 /// fn main () {
 /// # fn doc() {
-///     let appender = tracing_appender::rolling::daily("/some/path", "rolling.log");
+///     let appender = tracing_appender::rolling::daily("/some/path", "rolling.", ".log");
 ///     let (non_blocking_appender, _guard) = tracing_appender::non_blocking(appender);
 ///
 ///     let subscriber = tracing_subscriber::fmt().with_writer(non_blocking_appender);
@@ -306,12 +321,18 @@ pub fn hourly(
 /// }
 /// ```
 ///
-/// This will result in a log file located at `/some/path/rolling.log.yyyy-MM-dd-HH`.
+/// This will result in a log file located at `/some/path/rolling.yyyy-MM-dd-HH.log`.
 pub fn daily(
     directory: impl AsRef<Path>,
     file_name_prefix: impl AsRef<Path>,
+    file_name_suffix: impl AsRef<Path>,
 ) -> RollingFileAppender {
-    RollingFileAppender::new(Rotation::DAILY, directory, file_name_prefix)
+    RollingFileAppender::new(
+        Rotation::DAILY,
+        directory,
+        file_name_prefix,
+        file_name_suffix,
+    )
 }
 
 /// Creates a non-rolling, file appender
@@ -328,7 +349,7 @@ pub fn daily(
 /// # #[clippy::allow(needless_doctest_main)]
 /// fn main () {
 /// # fn doc() {
-///     let appender = tracing_appender::rolling::never("/some/path", "non-rolling.log");
+///     let appender = tracing_appender::rolling::never("/some/path", "non-rolling.log", "");
 ///     let (non_blocking_appender, _guard) = tracing_appender::non_blocking(appender);
 ///
 ///     let subscriber = tracing_subscriber::fmt().with_writer(non_blocking_appender);
@@ -341,8 +362,17 @@ pub fn daily(
 /// ```
 ///
 /// This will result in a log file located at `/some/path/non-rolling.log`.
-pub fn never(directory: impl AsRef<Path>, file_name: impl AsRef<Path>) -> RollingFileAppender {
-    RollingFileAppender::new(Rotation::NEVER, directory, file_name)
+pub fn never(
+    directory: impl AsRef<Path>,
+    file_name_prefix: impl AsRef<Path>,
+    file_name_suffix: impl AsRef<Path>,
+) -> RollingFileAppender {
+    RollingFileAppender::new(
+        Rotation::NEVER,
+        directory,
+        file_name_prefix,
+        file_name_suffix,
+    )
 }
 
 /// Defines a fixed period for rolling of a log file.
@@ -436,7 +466,12 @@ impl Rotation {
         }
     }
 
-    pub(crate) fn join_date(&self, filename: &str, date: &OffsetDateTime) -> String {
+    pub(crate) fn join_date(
+        &self,
+        filename_prefix: &str,
+        date: &OffsetDateTime,
+        filename_suffix: &str,
+    ) -> String {
         match *self {
             Rotation::MINUTELY => {
                 let format = format_description::parse("[year]-[month]-[day]-[hour]-[minute]")
@@ -445,7 +480,7 @@ impl Rotation {
                 let date = date
                     .format(&format)
                     .expect("Unable to format OffsetDateTime; this is a bug in tracing-appender");
-                format!("{}.{}", filename, date)
+                format!("{}{}{}", filename_prefix, date, filename_suffix)
             }
             Rotation::HOURLY => {
                 let format = format_description::parse("[year]-[month]-[day]-[hour]")
@@ -454,7 +489,7 @@ impl Rotation {
                 let date = date
                     .format(&format)
                     .expect("Unable to format OffsetDateTime; this is a bug in tracing-appender");
-                format!("{}.{}", filename, date)
+                format!("{}{}{}", filename_prefix, date, filename_suffix)
             }
             Rotation::DAILY => {
                 let format = format_description::parse("[year]-[month]-[day]")
@@ -462,9 +497,9 @@ impl Rotation {
                 let date = date
                     .format(&format)
                     .expect("Unable to format OffsetDateTime; this is a bug in tracing-appender");
-                format!("{}.{}", filename, date)
+                format!("{}{}{}", filename_prefix, date, filename_suffix)
             }
-            Rotation::NEVER => filename.to_string(),
+            Rotation::NEVER => format!("{}{}", filename_prefix, filename_suffix),
         }
     }
 }
@@ -489,11 +524,13 @@ impl Inner {
         rotation: Rotation,
         directory: impl AsRef<Path>,
         file_name_prefix: impl AsRef<Path>,
+        file_name_suffix: impl AsRef<Path>,
     ) -> (Self, RwLock<File>) {
         let log_directory = directory.as_ref().to_str().unwrap();
         let log_filename_prefix = file_name_prefix.as_ref().to_str().unwrap();
+        let log_filename_suffix = file_name_suffix.as_ref().to_str().unwrap();
 
-        let filename = rotation.join_date(log_filename_prefix, &now);
+        let filename = rotation.join_date(log_filename_prefix, &now, log_filename_suffix);
         let next_date = rotation.next_date(&now);
         let writer = RwLock::new(
             create_writer(log_directory, &filename).expect("failed to create appender"),
@@ -502,6 +539,7 @@ impl Inner {
         let inner = Inner {
             log_directory: log_directory.to_string(),
             log_filename_prefix: log_filename_prefix.to_string(),
+            log_filename_suffix: log_filename_suffix.to_string(),
             next_date: AtomicUsize::new(
                 next_date
                     .map(|date| date.unix_timestamp() as usize)
@@ -513,7 +551,9 @@ impl Inner {
     }
 
     fn refresh_writer(&self, now: OffsetDateTime, file: &mut File) {
-        let filename = self.rotation.join_date(&self.log_filename_prefix, &now);
+        let filename =
+            self.rotation
+                .join_date(&self.log_filename_prefix, &now, &self.log_filename_suffix);
 
         match create_writer(&self.log_directory, &filename) {
             Ok(new_file) => {
@@ -605,9 +645,10 @@ mod test {
         appender.flush().expect("Failed to flush!");
     }
 
-    fn test_appender(rotation: Rotation, file_prefix: &str) {
+    fn test_appender(rotation: Rotation, file_prefix: &str, file_suffix: &str) {
         let directory = tempfile::tempdir().expect("failed to create tempdir");
-        let mut appender = RollingFileAppender::new(rotation, directory.path(), file_prefix);
+        let mut appender =
+            RollingFileAppender::new(rotation, directory.path(), file_prefix, file_suffix);
 
         let expected_value = "Hello";
         write_to_log(&mut appender, expected_value);
@@ -620,22 +661,22 @@ mod test {
 
     #[test]
     fn write_minutely_log() {
-        test_appender(Rotation::HOURLY, "minutely.log");
+        test_appender(Rotation::HOURLY, "minutely", ".log");
     }
 
     #[test]
     fn write_hourly_log() {
-        test_appender(Rotation::HOURLY, "hourly.log");
+        test_appender(Rotation::HOURLY, "hourly", ".log");
     }
 
     #[test]
     fn write_daily_log() {
-        test_appender(Rotation::DAILY, "daily.log");
+        test_appender(Rotation::DAILY, "daily", ".log");
     }
 
     #[test]
     fn write_never_log() {
-        test_appender(Rotation::NEVER, "never.log");
+        test_appender(Rotation::NEVER, "never", ".log");
     }
 
     #[test]
@@ -671,7 +712,7 @@ mod test {
     }
 
     #[test]
-    fn test_path_concatination() {
+    fn test_path_concatenation() {
         let format = format_description::parse(
             "[year]-[month]-[day] [hour]:[minute]:[second] [offset_hour \
          sign:mandatory]:[offset_minute]:[offset_second]",
@@ -681,19 +722,19 @@ mod test {
         let now = OffsetDateTime::parse("2020-02-01 10:01:00 +00:00:00", &format).unwrap();
 
         // per-minute
-        let path = Rotation::MINUTELY.join_date("app.log", &now);
-        assert_eq!("app.log.2020-02-01-10-01", path);
+        let path = Rotation::MINUTELY.join_date("app.", &now, ".log");
+        assert_eq!("app.2020-02-01-10-01.log", path);
 
         // per-hour
-        let path = Rotation::HOURLY.join_date("app.log", &now);
-        assert_eq!("app.log.2020-02-01-10", path);
+        let path = Rotation::HOURLY.join_date("app.", &now, ".log");
+        assert_eq!("app.2020-02-01-10.log", path);
 
         // per-day
-        let path = Rotation::DAILY.join_date("app.log", &now);
-        assert_eq!("app.log.2020-02-01", path);
+        let path = Rotation::DAILY.join_date("app.", &now, ".log");
+        assert_eq!("app.2020-02-01.log", path);
 
         // never
-        let path = Rotation::NEVER.join_date("app.log", &now);
+        let path = Rotation::NEVER.join_date("app", &now, ".log");
         assert_eq!("app.log", path);
     }
 
@@ -710,8 +751,13 @@ mod test {
 
         let now = OffsetDateTime::parse("2020-02-01 10:01:00 +00:00:00", &format).unwrap();
         let directory = tempfile::tempdir().expect("failed to create tempdir");
-        let (state, writer) =
-            Inner::new(now, Rotation::HOURLY, directory.path(), "test_make_writer");
+        let (state, writer) = Inner::new(
+            now,
+            Rotation::HOURLY,
+            directory.path(),
+            "test_make_writer.",
+            ".log",
+        );
 
         let clock = Arc::new(Mutex::new(now));
         let now = {
@@ -755,7 +801,7 @@ mod test {
             let file = fs::read_to_string(&path).expect("Failed to read file");
             println!("path={}\nfile={:?}", path.display(), file);
 
-            match path
+            match Path::new(path.file_stem().expect("found a malformed filename"))
                 .extension()
                 .expect("found a file without a date!")
                 .to_str()
@@ -767,7 +813,7 @@ mod test {
                 "2020-02-01-11" => {
                     assert_eq!("file 2\nfile 2\n", file);
                 }
-                x => panic!("unexpected date {}", x),
+                x => panic!("unexpected date '{}'", x),
             }
         }
     }
